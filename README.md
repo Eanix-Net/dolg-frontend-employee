@@ -2,6 +2,9 @@
 
 A Flutter application for LawnBuddy employees to manage appointments, customers, equipment, and more.
 
+![App Login Screen](https://lawnbuddy.net/static/images/app-screenshot.png)
+![Website Landing Page](https://lawnbuddy.net/static/images/website-screenshot.png)
+
 ## Features
 
 - **Authentication**: Secure login for employees with role-based access control
