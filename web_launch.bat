@@ -1,0 +1,3 @@
+@echo off
+echo Running Flutter web with HTML renderer for better CORS handling...
+flutter run -d chrome --dart-define-from-file=.env

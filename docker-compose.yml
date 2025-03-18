@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  # Flutter web app
+  web:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    ports:
+      - "2080:80"
+    restart: unless-stopped
+    networks:
+      - lawnmate-network
+
+networks:
+  lawnmate-network:
+    driver: bridge
+
+volumes:
+  postgres_data: 

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="LawnMate Employee Application">
+  
+  <!-- Simplified Content Security Policy -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self' https://app.lawnbuddy.net;
+    connect-src 'self' localhost:56770 https://app.lawnbuddy.net https://fonts.gstatic.com https://www.gstatic.com/flutter-canvaskit/ ws: wss:;
+    script-src 'self' 'wasm-unsafe-eval' 'unsafe-inline' 'unsafe-hashes' 'unsafe-eval' https://www.gstatic.com/flutter-canvaskit/ https://app.lawnbuddy.net/api/ blob:; 
+    font-src 'self' 'unsafe-inline' https://fonts.gstatic.com; 
+    style-src 'self' 'unsafe-inline';
+    img-src 'self' data: https:;
+    object-src 'none';
+    base-uri 'self';
+    form-action 'self';
+    child-src 'self';
+    worker-src 'self' blob:;">
+  
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="LawnMate Employee">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>LawnMate Employee</title>
+  <link rel="manifest" href="manifest.json">
+  
+  <script>
+    // The value below is injected by flutter build, do not touch.
+    var serviceWorkerVersion = null;
+  </script>
+  <!-- This script adds the flutter initialization JS code -->
+  <script src="flutter.js" defer></script>
+</head>
+<body>
+  <div id="loading">
+    <style>
+      body { 
+        margin: 0;
+        padding: 0;
+        background-color: #fff; 
+      }
+      #loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+      }
+      .spinner {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        border: 5px solid rgba(79, 195, 95, 0.2);
+        border-top-color: #4FC35F;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin { to { transform: rotate(360deg) } }
+    </style>
+    <div class="spinner"></div>
+  </div>
+  
+  <script>
+    window.addEventListener('load', function() {
+      var loadingIndicator = document.querySelector('#loading');
+      
+      // Initialize the Flutter engine
+      _flutter.loader.loadEntrypoint({
+        onEntrypointLoaded: function(engineInitializer) {
+          // If we timeout, remove the loading indicator
+          var loadingTimeout = setTimeout(function() {
+            if (loadingIndicator) {
+              console.log("Loading timeout - removing loading indicator");
+              loadingIndicator.remove();
+            }
+          }, 10000);
+          
+          engineInitializer.initializeEngine().then(function(appRunner) {
+            // Clear the timeout as the engine has initialized
+            clearTimeout(loadingTimeout);
+            
+            // Run the app and remove the loading indicator
+            appRunner.runApp();
+            window.setTimeout(function() {
+              loadingIndicator.remove();
+            }, 200);
+          }).catch(function(error) {
+            console.error("Failed to run app:", error);
+            // Still remove the loading indicator on error
+            loadingIndicator.remove();
+          });
+        }
+      });
+    });
+  </script>
+</body>
+</html>
