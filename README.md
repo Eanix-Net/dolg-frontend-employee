@@ -55,7 +55,7 @@ When running the app in a web browser, you may encounter CORS (Cross-Origin Reso
 
 #### Server-Side CORS Configuration
 
-CORS must be enabled on the server side. Ensure that the API server at https://app.lawnbudy.net has the following headers in its responses:
+CORS must be enabled on the server side. Ensure that the API server at https://app.example.net has the following headers in its responses:
 
 ```
 Access-Control-Allow-Origin: https://yourappdomain.com  # Or * for any domain (less secure)
@@ -68,9 +68,9 @@ Access-Control-Allow-Credentials: true  # If you need to send cookies
 
 For local development, you can:
 
-1. Use the `--web-renderer html` flag when running Flutter web:
+1. Run Flutter web:
    ```
-   flutter run -d chrome --web-renderer html
+   flutter run -d chrome 
    ```
 
 2. If running in debug mode, install a browser extension that disables CORS for testing purposes.
@@ -113,4 +113,4 @@ This project is proprietary and confidential.
 
 ## Contact
 
-For support or inquiries, please contact support@lawnbuddy.com 
+For support or inquiries, please contact daniel@jaredweisinger.com
