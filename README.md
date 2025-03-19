@@ -1,9 +1,6 @@
-# LawnBuddy Employee App
+# Dolg Employee App
 
-A Flutter application for LawnBuddy employees to manage appointments, customers, equipment, and more.
-
-![App Login Screen](https://lawnbuddy.net/static/images/app-screenshot.png)
-![Website Landing Page](https://lawnbuddy.net/static/images/website-screenshot.png)
+A Flutter application for Dolg.io employees to manage appointments, customers, equipment, and more.
 
 ## Features
 
@@ -116,4 +113,4 @@ This project is proprietary and confidential.
 
 ## Contact
 
-For support or inquiries, please contact daniel@jaredweisinger.com
+For support or inquiries, please contact daniel@eanix.net
