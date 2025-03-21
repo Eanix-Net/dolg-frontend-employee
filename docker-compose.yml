@@ -10,10 +10,10 @@ services:
       - "2080:80"
     restart: unless-stopped
     networks:
-      - lawnmate-network
+      - dolg-network
 
 networks:
-  lawnmate-network:
+  dolg-network:
     driver: bridge
 
 volumes:

@@ -1,7 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/appointment_service.dart';
+import '../../../core/models/appointment.dart';
+import '../../../core/models/recurring_appointment.dart';
 import '../../common/app_drawer.dart';
+import '../../widgets/appointment_form.dart';
+import '../../widgets/recurring_appointment_form.dart';
+import 'appointment_details_screen.dart';
+import 'recurring_appointment_details_screen.dart';
+import '../../widgets/appointment_calendar.dart';
+import 'calendar_view.dart';
 
 class AppointmentsScreen extends StatefulWidget {
   const AppointmentsScreen({super.key});
@@ -12,15 +22,24 @@ class AppointmentsScreen extends StatefulWidget {
 
 class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  List<Appointment> _appointments = [];
+  List<Appointment> _filteredAppointments = [];
   bool _isLoading = false;
-  final List<Map<String, dynamic>> _appointments = [];
-  final List<Map<String, dynamic>> _recurringAppointments = [];
-
+  bool _isCreatingAppointment = false;
+  String? _errorMessage;
+  DateTime _selectedDate = DateTime.now();
+  late AppointmentService _appointmentService;
+  final DateFormat _dateFormat = DateFormat('MMMM dd, yyyy');
+  
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _loadData();
+    _loadAppointments();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _appointmentService = Provider.of<AppointmentService>(context, listen: false);
+      _loadRecurringAppointments();
+    });
   }
 
   @override
@@ -29,276 +48,345 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
     super.dispose();
   }
 
-  Future<void> _loadData() async {
+  Future<void> _loadAppointments() async {
     setState(() {
       _isLoading = true;
+      _errorMessage = null;
     });
 
-    // TODO: Implement API calls to fetch appointments
-    // This would use the ApiService to fetch data from the backend
-    
-    // Simulate loading delay
-    await Future.delayed(const Duration(seconds: 1));
-    
-    // Sample data for demonstration
-    final sampleAppointments = [
-      {
-        'id': 1,
-        'customer_location_id': 1,
-        'customer_name': 'John Smith',
-        'address': '123 Main St',
-        'arrival_datetime': '2023-04-15T09:00:00',
-        'departure_datetime': '2023-04-15T10:30:00',
-        'team': 'Team A',
-      },
-      {
-        'id': 2,
-        'customer_location_id': 2,
-        'customer_name': 'Jane Doe',
-        'address': '456 Oak Ave',
-        'arrival_datetime': '2023-04-16T13:00:00',
-        'departure_datetime': '2023-04-16T14:30:00',
-        'team': 'Team B',
-      },
-    ];
-    
-    final sampleRecurringAppointments = [
-      {
-        'id': 1,
-        'customer_location_id': 3,
-        'customer_name': 'Bob Johnson',
-        'address': '789 Pine Rd',
-        'start_date': '2023-04-01',
-        'schedule': 'Every Monday at 10:00 AM',
-        'team': 'Team C',
-      },
-      {
-        'id': 2,
-        'customer_location_id': 4,
-        'customer_name': 'Alice Williams',
-        'address': '321 Cedar Ln',
-        'start_date': '2023-04-02',
-        'schedule': 'Every other Wednesday at 2:00 PM',
-        'team': 'Team A',
-      },
-    ];
-
-    if (mounted) {
+    try {
+      // Calculate start and end dates for the current week
+      final now = _selectedDate;
+      final startDate = now.subtract(Duration(days: now.weekday - 1));
+      final endDate = startDate.add(const Duration(days: 6));
+      
+      await _appointmentService.getAppointments(
+        startDate: startDate,
+        endDate: endDate,
+      );
+      
       setState(() {
-        _appointments.clear();
-        _appointments.addAll(sampleAppointments);
-        _recurringAppointments.clear();
-        _recurringAppointments.addAll(sampleRecurringAppointments);
         _isLoading = false;
+        _appointments = _appointmentService.appointments;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = e.toString();
       });
     }
+  }
+  
+  Future<void> _loadRecurringAppointments() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    
+    try {
+      await _appointmentService.getRecurringAppointments();
+      
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = e.toString();
+      });
+    }
+  }
+  
+  void _selectDate(BuildContext context) async {
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+    );
+    
+    if (pickedDate != null && pickedDate != _selectedDate) {
+      setState(() {
+        _selectedDate = pickedDate;
+      });
+      _loadAppointments();
+    }
+  }
+  
+  Future<void> _createAppointment() async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    if (!authService.hasRole(UserRole.lead)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You do not have permission to create appointments')),
+      );
+      return;
+    }
+    
+    final appointmentService = Provider.of<AppointmentService>(context, listen: false);
+    
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.8,
+          padding: const EdgeInsets.all(16),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Create New Appointment',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 16),
+                AppointmentForm(
+                  onSave: (appointment) async {
+                    Navigator.pop(context);
+                    
+                    try {
+                      await appointmentService.createAppointment(appointment);
+                      
+                      // Refresh the appointments list
+                      if (mounted) {
+                        _loadAppointments();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Appointment created successfully')),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Error: ${e.toString()}')),
+                        );
+                      }
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+  
+  Future<void> _createRecurringAppointment() async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    if (!authService.hasRole(UserRole.lead)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You do not have permission to create recurring appointments')),
+      );
+      return;
+    }
+    
+    final appointmentService = Provider.of<AppointmentService>(context, listen: false);
+    
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.8,
+          padding: const EdgeInsets.all(16),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Create Recurring Appointment',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 16),
+                RecurringAppointmentForm(
+                  onSave: (recurringAppointment) async {
+                    Navigator.pop(context);
+                    
+                    try {
+                      await appointmentService.createRecurringAppointment(recurringAppointment);
+                      
+                      // Refresh the recurring appointments list
+                      if (mounted) {
+                        _loadRecurringAppointments();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Recurring appointment created successfully')),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Error: ${e.toString()}')),
+                        );
+                      }
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context);
-    final canCreate = authService.hasRole(UserRole.lead);
-    final canDelete = authService.hasRole(UserRole.admin);
-
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Appointments'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadAppointments,
+            tooltip: 'Refresh',
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
-            Tab(text: 'One-Time'),
-            Tab(text: 'Recurring'),
+            Tab(text: 'List View'),
+            Tab(text: 'Calendar'),
           ],
         ),
       ),
-      drawer: const AppDrawer(currentRoute: '/appointments'),
-      floatingActionButton: canCreate ? FloatingActionButton(
-        onPressed: () {
-          _showAddAppointmentDialog(_tabController.index == 1);
-        },
-        child: const Icon(Icons.add),
-      ) : null,
+      drawer: AppDrawer(currentRoute: '/appointments'),
       body: TabBarView(
         controller: _tabController,
         children: [
-          // One-time appointments tab
-          _buildAppointmentsList(canCreate, canDelete),
-          
-          // Recurring appointments tab
-          _buildRecurringAppointmentsList(canCreate, canDelete),
+          _buildListView(),
+          const CalendarView(),
         ],
+      ),
+      floatingActionButton: authService.hasRole(UserRole.lead)
+          ? FloatingActionButton.extended(
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  builder: (context) => Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.event),
+                        title: const Text('Regular Appointment'),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _createAppointment();
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.repeat),
+                        title: const Text('Recurring Appointment'),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _createRecurringAppointment();
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Appointment'),
+              tooltip: 'Create Appointment',
+            )
+          : null,
+    );
+  }
+  
+  Widget _buildListView() {
+    return _isLoading && _appointments.isEmpty
+        ? const Center(child: CircularProgressIndicator())
+        : _errorMessage != null && _appointments.isEmpty
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Error: $_errorMessage',
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _loadAppointments,
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              )
+            : Column(
+                children: [
+                  _buildDateSelector(),
+                  Expanded(
+                    child: _buildAppointmentsList(),
+                  ),
+                ],
+              );
+  }
+  
+  Widget _buildDateSelector() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Text(
+        'Week of ${_dateFormat.format(_selectedDate)}',
+        style: Theme.of(context).textTheme.titleMedium,
       ),
     );
   }
-
-  Widget _buildAppointmentsList(bool canEdit, bool canDelete) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_appointments.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.calendar_today_outlined,
-              size: 64,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No appointments found',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 8),
-            if (canEdit)
-              ElevatedButton.icon(
-                onPressed: () => _showAddAppointmentDialog(false),
-                icon: const Icon(Icons.add),
-                label: const Text('Add Appointment'),
-              ),
-          ],
-        ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: _loadData,
+  
+  Widget _buildAppointmentsList() {
+    return Expanded(
       child: ListView.builder(
-        padding: const EdgeInsets.all(16),
         itemCount: _appointments.length,
         itemBuilder: (context, index) {
           final appointment = _appointments[index];
-          return Card(
-            margin: const EdgeInsets.only(bottom: 16),
-            child: ListTile(
-              title: Text(appointment['customer_name']),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(appointment['address']),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Date: ${_formatDate(appointment['arrival_datetime'])}',
-                  ),
-                  Text(
-                    'Time: ${_formatTime(appointment['arrival_datetime'])} - ${_formatTime(appointment['departure_datetime'])}',
-                  ),
-                  Text('Team: ${appointment['team']}'),
-                ],
-              ),
-              isThreeLine: true,
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (canEdit)
-                    IconButton(
-                      icon: const Icon(Icons.edit),
-                      onPressed: () {
-                        // TODO: Implement edit functionality
-                      },
-                    ),
-                  if (canDelete)
-                    IconButton(
-                      icon: const Icon(Icons.delete),
-                      onPressed: () {
-                        _showDeleteConfirmationDialog(appointment['id'], false);
-                      },
-                    ),
-                ],
-              ),
-              onTap: () {
-                // TODO: Navigate to appointment details
-              },
-            ),
-          );
+          return _buildAppointmentCard(appointment);
         },
       ),
     );
   }
-
-  Widget _buildRecurringAppointmentsList(bool canEdit, bool canDelete) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_recurringAppointments.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.calendar_month_outlined,
-              size: 64,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No recurring appointments found',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 8),
-            if (canEdit)
-              ElevatedButton.icon(
-                onPressed: () => _showAddAppointmentDialog(true),
-                icon: const Icon(Icons.add),
-                label: const Text('Add Recurring Appointment'),
-              ),
-          ],
-        ),
+  
+  Widget _buildRecurringAppointmentsList() {
+    final appointmentService = Provider.of<AppointmentService>(context);
+    final recurringAppointments = appointmentService.recurringAppointments;
+    
+    if (recurringAppointments.isEmpty) {
+      return const Center(
+        child: Text('No recurring appointments'),
       );
     }
-
-    return RefreshIndicator(
-      onRefresh: _loadData,
+    
+    return Expanded(
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount: _recurringAppointments.length,
+        itemCount: recurringAppointments.length,
         itemBuilder: (context, index) {
-          final appointment = _recurringAppointments[index];
+          final recurringAppointment = recurringAppointments[index];
+          // Ensure ID is non-null with a default value of 0 (which should be a valid fallback)
+          final appointmentId = recurringAppointment.id ?? 0;
+          
           return Card(
             margin: const EdgeInsets.only(bottom: 16),
             child: ListTile(
-              title: Text(appointment['customer_name']),
+              title: Text(recurringAppointment.customerName ?? 'Unknown Customer'),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(appointment['address']),
-                  const SizedBox(height: 4),
-                  Text('Starting: ${appointment['start_date']}'),
-                  Text('Schedule: ${appointment['schedule']}'),
-                  Text('Team: ${appointment['team']}'),
+                  Text(recurringAppointment.address ?? 'No address'),
+                  Text('Schedule: ${recurringAppointment.schedule}'),
                 ],
               ),
-              isThreeLine: true,
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (canEdit)
-                    IconButton(
-                      icon: const Icon(Icons.edit),
-                      onPressed: () {
-                        // TODO: Implement edit functionality
-                      },
-                    ),
-                  if (canDelete)
-                    IconButton(
-                      icon: const Icon(Icons.delete),
-                      onPressed: () {
-                        _showDeleteConfirmationDialog(appointment['id'], true);
-                      },
-                    ),
-                ],
-              ),
+              trailing: const Icon(Icons.chevron_right),
               onTap: () {
-                // TODO: Navigate to recurring appointment details
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => RecurringAppointmentDetailsScreen(
+                      recurringAppointmentId: appointmentId,
+                    ),
+                  ),
+                ).then((_) => _loadAppointments());
               },
             ),
           );
@@ -306,70 +394,103 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with SingleTick
       ),
     );
   }
-
-  void _showAddAppointmentDialog(bool isRecurring) {
-    // TODO: Implement add appointment dialog
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(isRecurring ? 'Add Recurring Appointment' : 'Add Appointment'),
-        content: const Text('This feature is not implemented yet.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showDeleteConfirmationDialog(int id, bool isRecurring) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirm Delete'),
-        content: Text(
-          isRecurring
-              ? 'Are you sure you want to delete this recurring appointment?'
-              : 'Are you sure you want to delete this appointment?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // TODO: Implement delete functionality
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    isRecurring
-                        ? 'Recurring appointment deleted'
-                        : 'Appointment deleted',
+  
+  Widget _buildAppointmentCard(Appointment appointment) {
+    final dateFormat = DateFormat('EEE, MMM d');
+    final timeFormat = DateFormat('h:mm a');
+    final authService = Provider.of<AuthService>(context, listen: false);
+    
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: InkWell(
+        onTap: () {
+          // Navigate to appointment details
+          if (appointment.id != null) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => AppointmentDetailsScreen(appointmentId: appointment.id!),
+              ),
+            ).then((_) => _loadAppointments());
+          }
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    appointment.customerName ?? 'Unknown Customer',
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
+                  if (authService.hasRole(UserRole.lead))
+                    PopupMenuButton<String>(
+                      onSelected: (value) {
+                        if (value == 'edit') {
+                          // TODO: Edit appointment
+                        } else if (value == 'delete') {
+                          // TODO: Delete appointment
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              Icon(Icons.edit),
+                              SizedBox(width: 8),
+                              Text('Edit'),
+                            ],
+                          ),
+                        ),
+                        if (authService.hasRole(UserRole.admin))
+                          const PopupMenuItem(
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                Icon(Icons.delete, color: Colors.red),
+                                SizedBox(width: 8),
+                                Text('Delete', style: TextStyle(color: Colors.red)),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                appointment.address ?? 'No address',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '${dateFormat.format(appointment.arrivalDateTime)}',
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                  Text(
+                    '${timeFormat.format(appointment.arrivalDateTime)} - ${timeFormat.format(appointment.departureDateTime)}',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+              if (appointment.team != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Team: ${appointment.team}',
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
-              );
-            },
-            child: const Text('Delete'),
+              ],
+            ],
           ),
-        ],
+        ),
       ),
     );
-  }
-
-  String _formatDate(String dateTimeString) {
-    final dateTime = DateTime.parse(dateTimeString);
-    return '${dateTime.month}/${dateTime.day}/${dateTime.year}';
-  }
-
-  String _formatTime(String dateTimeString) {
-    final dateTime = DateTime.parse(dateTimeString);
-    final hour = dateTime.hour > 12 ? dateTime.hour - 12 : dateTime.hour;
-    final period = dateTime.hour >= 12 ? 'PM' : 'AM';
-    final minute = dateTime.minute.toString().padLeft(2, '0');
-    return '$hour:$minute $period';
   }
 } 

@@ -131,7 +131,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   
                   // App name
                   Text(
-                    'LawnMate',
+                    'Dolg',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,

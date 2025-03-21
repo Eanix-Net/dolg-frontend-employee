@@ -1,6 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
 import 'base_model.dart';
-import 'service.dart';
 
 part 'invoice_item.g.dart';
 
@@ -12,25 +11,29 @@ class InvoiceItem implements BaseModel {
   
   /// ID of the invoice this item belongs to
   @JsonKey(name: 'invoice_id')
-  final int invoiceId;
+  final int? invoiceId;
   
-  /// ID of the service provided
-  @JsonKey(name: 'service_id')
-  final int serviceId;
+  /// Description of the service or product
+  final String description;
   
-  /// Cost of the service
-  final double cost;
+  /// Quantity of the item
+  final double quantity;
   
-  /// Service details
-  final Service? service;
-
+  /// Unit price of the item
+  @JsonKey(name: 'unit_price')
+  final double unitPrice;
+  
+  /// Total amount for this line item (quantity * unit_price)
+  final double amount;
+  
   /// Constructor
   InvoiceItem({
     this.id,
-    required this.invoiceId,
-    required this.serviceId,
-    required this.cost,
-    this.service,
+    this.invoiceId,
+    required this.description,
+    required this.quantity,
+    required this.unitPrice,
+    required this.amount,
   });
 
   /// Create InvoiceItem from JSON
@@ -45,16 +48,18 @@ class InvoiceItem implements BaseModel {
   InvoiceItem copyWith({
     int? id,
     int? invoiceId,
-    int? serviceId,
-    double? cost,
-    Service? service,
+    String? description,
+    double? quantity,
+    double? unitPrice,
+    double? amount,
   }) {
     return InvoiceItem(
       id: id ?? this.id,
       invoiceId: invoiceId ?? this.invoiceId,
-      serviceId: serviceId ?? this.serviceId,
-      cost: cost ?? this.cost,
-      service: service ?? this.service,
+      description: description ?? this.description,
+      quantity: quantity ?? this.quantity,
+      unitPrice: unitPrice ?? this.unitPrice,
+      amount: amount ?? this.amount,
     );
   }
 } 

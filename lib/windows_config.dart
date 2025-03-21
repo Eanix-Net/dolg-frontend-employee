@@ -12,7 +12,7 @@ class WindowsConfig {
       backgroundColor: Colors.transparent,
       skipTaskbar: false,
       titleBarStyle: TitleBarStyle.hidden,
-      title: 'LawnMate Employee',
+      title: 'Dolg Employee',
     );
 
     await windowManager.waitUntilReadyToShow(windowOptions, () async {

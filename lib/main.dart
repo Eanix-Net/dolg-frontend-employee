@@ -6,10 +6,19 @@ import 'package:logging/logging.dart';
 import 'dart:async';
 import 'dart:developer' as developer;
 import 'core/services/auth_service.dart';
+import 'core/services/employee_service.dart';
+import 'core/api/api_service.dart';
 import 'core/config/app_config.dart';
 import 'ui/theme/app_theme.dart';
 import 'ui/common/app_router.dart';
 import 'windows_config.dart';
+import 'core/services/equipment_service.dart';
+import 'core/services/invoice_service.dart';
+import 'core/services/quote_service.dart';
+import 'core/services/review_service.dart';
+import 'core/services/time_log_service.dart';
+import 'core/services/customer_service.dart';
+import 'core/services/appointment_service.dart';
 
 void main() async {
   // Set up error handling
@@ -90,12 +99,60 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
-        Provider.value(value: AppConfig()),
+        Provider<AppConfig>.value(value: AppConfig()),
+        ProxyProvider<AuthService, ApiService>(
+          create: (context) => ApiService(context.read<AuthService>()),
+          update: (context, authService, previous) => previous ?? ApiService(authService),
+        ),
+        ChangeNotifierProxyProvider<ApiService, EmployeeService>(
+          create: (context) => EmployeeService(context.read<ApiService>()),
+          update: (context, apiService, previous) => previous ?? EmployeeService(apiService),
+        ),
+        ChangeNotifierProxyProvider<ApiService, EquipmentService>(
+          create: (context) => EquipmentService(context.read<ApiService>()),
+          update: (context, apiService, previous) => previous ?? EquipmentService(apiService),
+        ),
+        ChangeNotifierProxyProvider<ApiService, InvoiceService>(
+          create: (context) => InvoiceService(context.read<ApiService>()),
+          update: (context, apiService, previous) => previous ?? InvoiceService(apiService),
+        ),
+        ChangeNotifierProxyProvider<ApiService, QuoteService>(
+          create: (context) => QuoteService(context.read<ApiService>()),
+          update: (context, apiService, previous) => previous ?? QuoteService(apiService),
+        ),
+        ChangeNotifierProxyProvider<ApiService, ReviewService>(
+          create: (context) => ReviewService(context.read<ApiService>()),
+          update: (context, apiService, previous) => previous ?? ReviewService(apiService),
+        ),
+        ProxyProvider2<ApiService, AuthService, TimeLogService>(
+          create: (context) => TimeLogService(
+            context.read<ApiService>(),
+            context.read<AuthService>(),
+          ),
+          update: (context, apiService, authService, previous) => 
+            previous ?? TimeLogService(apiService, authService),
+        ),
+        ChangeNotifierProxyProvider2<ApiService, AuthService, CustomerService>(
+          create: (context) => CustomerService(
+            context.read<ApiService>(), 
+            context.read<AuthService>()
+          ),
+          update: (context, apiService, authService, previous) => 
+            previous ?? CustomerService(apiService, authService),
+        ),
+        ChangeNotifierProxyProvider2<ApiService, AuthService, AppointmentService>(
+          create: (context) => AppointmentService(
+            context.read<ApiService>(), 
+            context.read<AuthService>()
+          ),
+          update: (context, apiService, authService, previous) => 
+            previous ?? AppointmentService(apiService, authService),
+        ),
       ],
       child: Consumer<AuthService>(
         builder: (context, authService, _) {
           return MaterialApp.router(
-            title: 'LawnMate Employee',
+            title: 'Dolg Employee',
             theme: AppTheme.lightTheme.copyWith(
               // Add desktop-specific theme modifications
               visualDensity: VisualDensity.adaptivePlatformDensity,

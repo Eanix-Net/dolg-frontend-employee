@@ -18,13 +18,13 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="LawnMate Employee Application">
+  <meta name="description" content="Dolg.io Employee Application">
   
   <!-- Simplified Content Security Policy -->
   <meta http-equiv="Content-Security-Policy" content="
-    default-src 'self' https://app.lawnbuddy.net;
-    connect-src 'self' localhost:56770 https://app.lawnbuddy.net https://fonts.gstatic.com https://www.gstatic.com/flutter-canvaskit/ ws: wss:;
-    script-src 'self' 'wasm-unsafe-eval' 'unsafe-inline' 'unsafe-hashes' 'unsafe-eval' https://www.gstatic.com/flutter-canvaskit/ https://app.lawnbuddy.net/api/ blob:; 
+    default-src 'self' https://app.dolg.io;
+    connect-src 'self' localhost:56770 https://app.dolg.io https://fonts.gstatic.com https://www.gstatic.com/flutter-canvaskit/ ws: wss:;
+    script-src 'self' 'wasm-unsafe-eval' 'unsafe-inline' 'unsafe-hashes' 'unsafe-eval' https://www.gstatic.com/flutter-canvaskit/ https://app.dolg.io/api/ blob:; 
     font-src 'self' 'unsafe-inline' https://fonts.gstatic.com; 
     style-src 'self' 'unsafe-inline';
     img-src 'self' data: https:;
@@ -37,13 +37,13 @@
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="LawnMate Employee">
+  <meta name="apple-mobile-web-app-title" content="dolg Employee">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>LawnMate Employee</title>
+  <title>Dolg.io Employee</title>
   <link rel="manifest" href="manifest.json">
   
   <script>
@@ -85,7 +85,7 @@
       var loadingIndicator = document.querySelector('#loading');
       
       // Initialize the Flutter engine
-      _flutter.loader.loadEntrypoint({
+      _flutter.loader.load({
         onEntrypointLoaded: function(engineInitializer) {
           // If we timeout, remove the loading indicator
           var loadingTimeout = setTimeout(function() {

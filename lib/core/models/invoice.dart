@@ -14,55 +14,83 @@ enum PaymentStatus {
   declined
 }
 
+enum InvoiceStatus {
+  draft,
+  sent,
+  paid,
+  overdue,
+  canceled
+}
+
 /// Invoice model representing a customer invoice
 @JsonSerializable()
 class Invoice implements BaseModel {
   /// Invoice ID
   final int? id;
   
-  /// ID of the appointment this invoice is for
-  @JsonKey(name: 'appointment_id')
-  final int appointmentId;
+  /// Customer ID this invoice is for
+  @JsonKey(name: 'customer_id')
+  final int customerId;
   
-  /// Subtotal amount before tax
-  final double subtotal;
+  /// Customer name (for display purposes)
+  @JsonKey(name: 'customer_name')
+  final String? customerName;
   
-  /// Total amount including tax
-  final double total;
+  /// Invoice number (for display purposes)
+  @JsonKey(name: 'invoice_number')
+  final String? invoiceNumber;
   
-  /// Tax rate applied to this invoice
-  @JsonKey(name: 'tax_rate')
-  final double taxRate;
-  
-  /// Payment status of the invoice
-  final PaymentStatus paid;
-  
-  /// Number of payment attempts
-  final int attempt;
+  /// Date the invoice was issued
+  @JsonKey(name: 'issue_date')
+  final DateTime issueDate;
   
   /// Due date for payment
   @JsonKey(name: 'due_date')
   final DateTime dueDate;
   
-  /// Date when the invoice was created
-  @JsonKey(name: 'created_date')
-  final DateTime? createdDate;
+  /// Total amount of the invoice
+  final double total;
+  
+  /// Amount that has been paid
+  @JsonKey(name: 'amount_paid')
+  final double amountPaid;
+  
+  /// Balance remaining
+  final double balance;
+  
+  /// Current status of the invoice
+  final InvoiceStatus status;
+  
+  /// Notes about the invoice
+  final String? notes;
   
   /// Line items on the invoice
   final List<InvoiceItem>? items;
+  
+  /// Date the invoice was created in the system
+  @JsonKey(name: 'created_at')
+  final DateTime? createdAt;
+  
+  /// Date the invoice was last updated
+  @JsonKey(name: 'updated_at')
+  final DateTime? updatedAt;
 
   /// Constructor
   Invoice({
     this.id,
-    required this.appointmentId,
-    required this.subtotal,
-    required this.total,
-    required this.taxRate,
-    required this.paid,
-    required this.attempt,
+    required this.customerId,
+    this.customerName,
+    this.invoiceNumber,
+    required this.issueDate,
     required this.dueDate,
-    this.createdDate,
+    required this.status,
+    required this.total,
+    required this.amountPaid,
+    required this.balance,
+    this.notes,
     this.items,
+    this.createdAt,
+    this.updatedAt,
   });
 
   /// Create Invoice from JSON
@@ -76,27 +104,52 @@ class Invoice implements BaseModel {
   @override
   Invoice copyWith({
     int? id,
-    int? appointmentId,
-    double? subtotal,
-    double? total,
-    double? taxRate,
-    PaymentStatus? paid,
-    int? attempt,
+    int? customerId,
+    String? customerName,
+    String? invoiceNumber,
+    DateTime? issueDate,
     DateTime? dueDate,
-    DateTime? createdDate,
+    InvoiceStatus? status,
+    double? total,
+    double? amountPaid,
+    double? balance,
+    String? notes,
     List<InvoiceItem>? items,
+    DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return Invoice(
       id: id ?? this.id,
-      appointmentId: appointmentId ?? this.appointmentId,
-      subtotal: subtotal ?? this.subtotal,
-      total: total ?? this.total,
-      taxRate: taxRate ?? this.taxRate,
-      paid: paid ?? this.paid,
-      attempt: attempt ?? this.attempt,
+      customerId: customerId ?? this.customerId,
+      customerName: customerName ?? this.customerName,
+      invoiceNumber: invoiceNumber ?? this.invoiceNumber,
+      issueDate: issueDate ?? this.issueDate,
       dueDate: dueDate ?? this.dueDate,
-      createdDate: createdDate ?? this.createdDate,
+      status: status ?? this.status,
+      total: total ?? this.total,
+      amountPaid: amountPaid ?? this.amountPaid,
+      balance: balance ?? this.balance,
+      notes: notes ?? this.notes,
       items: items ?? this.items,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
+  }
+
+  static InvoiceStatus _parseStatus(String status) {
+    switch (status) {
+      case 'draft':
+        return InvoiceStatus.draft;
+      case 'sent':
+        return InvoiceStatus.sent;
+      case 'paid':
+        return InvoiceStatus.paid;
+      case 'overdue':
+        return InvoiceStatus.overdue;
+      case 'canceled':
+        return InvoiceStatus.canceled;
+      default:
+        return InvoiceStatus.draft;
+    }
   }
 } 

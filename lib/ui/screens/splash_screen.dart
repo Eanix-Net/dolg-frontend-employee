@@ -117,7 +117,7 @@ class _SplashScreenState extends State<SplashScreen> {
             
             // App name
             Text(
-              'LawnMate',
+              'Dolg',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: Theme.of(context).colorScheme.primary,

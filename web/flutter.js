@@ -1,53 +1,55 @@
-// Minimal Flutter web bootstrapper
-// The official flutter.js gets replaced by Flutter SDK 
-// during the build process
+// Copyright 2014 The Flutter Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
-// Flutter web initialization script
-(function() {
-  "use strict";
-  
-  // Define loader API
-  var _flutter = window._flutter || (window._flutter = {});
-  var _loader = _flutter.loader || (_flutter.loader = {});
-  
-  // Create the initialization method
-  _loader.loadEntrypoint = function(options) {
-    var entrypointUrl = options.entrypointUrl || "main.dart.js";
-    
-    return new Promise(function(resolve, reject) {
-      // Load the main script
-      var script = document.createElement("script");
-      script.src = entrypointUrl;
-      script.type = "application/javascript";
-      
-      script.addEventListener("load", function() {
-        if (window.init) {
-          console.log("Flutter main script loaded successfully");
-          window.init().then(function(engineInitializer) {
-            if (options.onEntrypointLoaded) {
-              options.onEntrypointLoaded(engineInitializer);
-            } else {
-              engineInitializer.initializeEngine().then(function(appRunner) {
-                appRunner.runApp();
-              });
-            }
-          }).catch(function(error) {
-            console.error("Failed to initialize Flutter engine:", error);
-            reject(error);
-          });
-        } else {
-          var error = new Error("Could not find Flutter initialization function");
-          console.error(error);
-          reject(error);
+// Flutter web bootstrap script for development or production environments.
+
+// If we were previously loaded by a web service worker, make sure they
+// get terminated.
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("/flutter_service_worker.js");
+  });
+}
+
+// This script must be included in <head> to reflect Flutter web's requirements
+// for CSP configuration.
+var serviceWorkerVersion = null;
+
+var scriptLoaded = false;
+function loadMainDartJs() {
+  if (scriptLoaded) {
+    return;
+  }
+  scriptLoaded = true;
+  var scriptTag = document.createElement("script");
+  scriptTag.src = "main.dart.js";
+  scriptTag.type = "application/javascript";
+  document.body.append(scriptTag);
+}
+
+// The browser-compatible initialization method that will be called by Flutter.
+window._flutter = { loader: {} };
+window._flutter.loader.didCreateEngineInitializer = function(engineInitializer) {
+  engineInitializer.initializeEngine().then(function(appRunner) {
+    appRunner.runApp();
+  });
+};
+
+// Define the loader API.
+var flutter = {
+  loader: {
+    loadEntrypoint: function(options) {
+      return new Promise(function(resolve, reject) {
+        try {
+          loadMainDartJs();
+          resolve(true);
+        } catch (e) {
+          reject(e);
         }
       });
-      
-      script.addEventListener("error", function(error) {
-        console.error("Failed to load Flutter main script:", error);
-        reject(error);
-      });
-      
-      document.body.appendChild(script);
-    });
-  };
-})(); 
+    }
+  }
+};
+
+window.flutter = flutter; 

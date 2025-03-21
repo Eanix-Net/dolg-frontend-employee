@@ -1,6 +1,6 @@
-# Docker Setup for LawnMate Employee Web App
+# Docker Setup for dolg Employee Web App
 
-This document provides instructions for running the LawnMate Employee web application using Docker.
+This document provides instructions for running the dolg Employee web application using Docker.
 
 ## Prerequisites
 
@@ -18,12 +18,12 @@ This document provides instructions for running the LawnMate Employee web applic
 
 You can customize the deployment by setting these environment variables:
 
-- `API_URL`: Base URL of the backend API without trailing slash (default: https://app.lawnmate.net)
+- `API_URL`: Base URL of the backend API without trailing slash (default: https://app.dolg.net)
 - `X-API-TOKEN`: API token used for authentication with the backend (default: your-api-token-here)
-- `DATABASE_URL`: PostgreSQL connection string (default: postgres://postgres:postgres@db:5432/lawnmate)
+- `DATABASE_URL`: PostgreSQL connection string (default: postgres://postgres:postgres@db:5432/dolg)
 - `POSTGRES_PASSWORD`: PostgreSQL password (default: postgres)
 - `POSTGRES_USER`: PostgreSQL username (default: postgres)
-- `POSTGRES_DB`: PostgreSQL database name (default: lawnmate)
+- `POSTGRES_DB`: PostgreSQL database name (default: dolg)
 
 ## Running the Application
 

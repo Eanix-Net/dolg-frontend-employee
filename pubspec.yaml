@@ -1,5 +1,5 @@
-name: lawnmate_employee
-description: LawnMate Employee App for managing appointments, customers, and more.
+name: dolg_employee
+description: dolg Employee App for managing appointments, customers, and more.
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -23,6 +23,7 @@ dependencies:
   file_picker: ^9.2.0
   url_launcher: ^6.2.1
   shared_preferences: ^2.2.2
+  table_calendar: ^3.0.9
   flutter_localizations:
     sdk: flutter
   window_size:
